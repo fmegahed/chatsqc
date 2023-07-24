@@ -1,0 +1,19 @@
+# streamlit related cache
+__pycache__/
+
+# pdfs folder contain an example of how we can make a chatSPC based on a copyrighted PDF (we are currently working with the copyright holder on getting clearance)
+pdfs/
+
+.Rproj.user/
+
+spc_gpt.Rproj
+
+# same as pdfs (this contains the vectorstore for the copyrighted pdf)
+vstore/vectorstore.pkl
+vstore/db_index/
+
+# since I prefer using RStudio to run my python files
+.Rprofile
+
+# env which contains our API keys
+.env
