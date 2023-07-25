@@ -4,8 +4,8 @@ __pycache__/
 # pdfs folder contain an example of how we can make a chatSPC based on a copyrighted PDF (we are currently working with the copyright holder on getting clearance)
 pdfs/
 
+# R stuff since I use the RStudio GUI for running all my open-source code
 .Rproj.user/
-
 spc_gpt.Rproj
 
 # same as pdfs (this contains the vectorstore for the copyrighted pdf)

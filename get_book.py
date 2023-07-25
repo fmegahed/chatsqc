@@ -39,8 +39,8 @@ for url in urls:
         url_data.append((identifier, section, subsection_identifier, subsection, url))
 
 
-# Sorting the URLs (likely not important since we will be chunking the text anyways)
-# --------------------------------------------------------------------------------------
+# Sorting the URLs
+# ------------------------------------------------------------------------------
 
 sorted_urls = sorted(url_data, key=lambda x: (order_rank[x[0]], x[1], x[2], x[3]))
 
