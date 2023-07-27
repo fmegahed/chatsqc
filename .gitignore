@@ -17,3 +17,6 @@ vstore/db_index/
 
 # env which contains our API keys
 .env
+
+# folder containing our blinded app
+blinded_app/
