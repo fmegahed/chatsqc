@@ -44,7 +44,7 @@ If you would like to run the chatbot on your local Python environment, please fo
 
 4. Run the following commands in Anaconda's cmd in this order:
     - `python preprocess.py`, which will create the vector store containing the relationship between different text vectors  
-    - `run streamlit chatsqc.py`, which will run the app
+    - `streamlit run chatsqc.py`, which will run the app
 
 
 **Instructions for Running the App every time:**
