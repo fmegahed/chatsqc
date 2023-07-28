@@ -40,9 +40,9 @@ If you would like to run the chatbot on your local Python environment, please fo
     - Use the command window to cd (change drive) to the location of your `requirements.txt` file  
     - Run the command `pip install -r requirements.txt` to install the required dependencies (libraries with specific versions)  
  
-3. Apply for an [OpenAI account](https://openai.com/pricing). Obtain an [API key from OpenAI](https://platform.openai.com/account/api-keys) and add it to a file titled `.env`, which must be placed in the project directory. The `.env` file must contain a variable called `OPENAI_API_KEY`, where you can assign your actual API Key as: `OPENAI_API_KEY=sk-mo9KXYZfk7pvRnIcdZzPFU8WlzuJB1EFLmihGYop4YZnTjk`. Note that:  
-  - This is a dummy API key, where we have maintained the format of the real key, but it should not have any real functionality or access permissions.  
-  - For exploring and testing the API, all new OpenAI users get free $5 in free tokens. These tokens expire after 3 months. Once you exceed your quota, you can subscribe to one of their paid plans and continue using the API. 
+3. Apply for an [OpenAI account](https://openai.com/pricing). Obtain an [API key from OpenAI](https://platform.openai.com/account/api-keys) and add it to a file titled `.env`, which must be placed in the project directory. The `.env` file must contain a variable called `OPENAI_API_KEY`, where you can assign your actual API Key as: `OPENAI_API_KEY=sk-mo9KXYZfk7pvRnIcdZzPFU8WlzuJB1EFLmihGYop4YZnTjk`. Note that:    
+    - This is a dummy API key, where we have maintained the format of the real key, but it should not have any real functionality or access permissions.  
+    - For exploring and testing the API, all new OpenAI users get free $5 in free tokens. These tokens expire after 3 months. Once you exceed your quota, you can subscribe to one of their paid plans and continue using the API. 
 
 4. Run the following commands in Anaconda's cmd in this order:
     - `python preprocess.py`, which will create the vector store containing the relationship between different text vectors  
