@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-st.title("A Quick ChatGPT-3.5 Benchmark Implementation")
+st.title("A Quick ChatGPT-4 Benchmark Implementation")
 
 
 # setting the open AI model to match what we have in ChatSQC
