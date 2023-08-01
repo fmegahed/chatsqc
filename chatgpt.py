@@ -18,7 +18,7 @@ st.title("A Quick ChatGPT-3.5 Benchmark Implementation")
 
 # setting the open AI model to match what we have in ChatSQC
 if "openai_model" not in st.session_state:
-    st.session_state["openai_model"] = "gpt-3.5-turbo-16k"
+    st.session_state["openai_model"] = "gpt-4-32k"
 
 
 if "temperature" not in st.session_state:
