@@ -26,6 +26,10 @@ from htbuilder import HtmlElement, div, ul, li, br, hr, a, p, img, styles, class
 from htbuilder.units import percent, px
 from htbuilder.funcs import rgba, rgb
 
+# to get the page headers
+import requests
+from bs4 import BeautifulSoup
+
 
 # Directory to store embeddings
 EMBEDDINGS_DIRECTORY = './vstore'
@@ -50,7 +54,7 @@ def get_conversation_chain(vectorstore):
     )
 
     memory = ConversationBufferMemory(
-        memory_key='chat_history', return_messages=True
+        memory_key='chat_history', return_messages=True, input_key = 'question', output_key = 'answer'
     )
         
     conversation_chain = ConversationalRetrievalChain.from_llm(
@@ -67,46 +71,56 @@ def get_conversation_chain(vectorstore):
     return conversation_chain
 
 
+def generate_html_links(search, response_content):
+    # Initialize an empty dictionary to store the results
+    results = {}
+
+    # If the response content does not include the specified text, process the search data
+    if "As a SQC chatbot grounded only in NIST/SEMATECH's Engineering Statistics Handbook, I do not know the answer to this question as it is not in my referenced/grounding material. I am sorry for not being able to help." not in response_content:
+        # Iterate through each tuple in the list
+        for i, item in enumerate(search):
+            # Extract the source
+            source = item[0].metadata['source']
+            score = item[1]
+            text_chunk = item[0].page_content  # Extract the text chunk
+
+            # If the source is already in our results, append the new text chunk and score
+            if source in results:
+                results[source].append((score, text_chunk))
+            # If the source is not in our results, add it along with its score and text chunk
+            else:
+                results[source] = [(score, text_chunk)]
+
+        # Generate the HTML for the sources and the text chunks
+        html_sources = '<div style="padding: 1px;">'
+        html_sources += '<i><u>Verified book sources and their relevant text passages:</u></i><br/>'
+        for i, (source, chunks) in enumerate(results.items(), start=1):
+            headers = st.session_state.headers[source]
+            html_sources += f'(Source {i}) <a style="font-size:1em;" href="{source}">{headers}</a><ul style="margin-left: 20px;">'
+            # Sort the chunks by score and enumerate them
+            for j, (score, text_chunk) in enumerate(sorted(chunks), start=1):
+                score_rounded = round(float(score), 3)  # round the score to 3 decimal places
+                html_sources += f'<li style="font-size:0.9em;"><details><summary>Click for relevant text chunk {j} from the link above (L2-dist = {score_rounded})</summary><p>{text_chunk}</p></details></li>'
+            html_sources += '</ul>'
+        html_sources += '</div>'
+    else:
+        # If the response content includes the specified text, there are no sources or text chunks
+        html_sources = ""
+
+    # Return the HTML for the sources
+    return html_sources
+
+
+
+
+
+
 # a function to handle the user input
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
     
     # Append new messages to chat history
     st.session_state.chat_history.extend(response['chat_history'])
-
-    # st.write(response) # used for debugging
-    
-    # commented code below will print the question-answer pairs in the order
-    # by which they were asked (similar to ChatGPT)
-    # -- can get tedious without the ability to automatically jump to the latest
-    # answer which is not implemented in our app
-    # for i, message in enumerate(st.session_state.chat_history):
-    #     if i % 2 == 0:
-    #         st.write(user_template.replace(
-    #             "{{MSG}}", message.content), unsafe_allow_html=True)
-    #     else:
-    #         st.write('\n')
-    #         st.write(bot_template.replace(
-    #             "{{MSG}}", message.content), unsafe_allow_html=True)
-    
-    # With a streamlit expander
-    with st.expander('Click for the two most relevant text chunks based on your last prompt, and then click to hide before the next prompt.'):
-        # Find the relevant pages based on:
-        # https://python.langchain.com/docs/modules/data_connection/vectorstores/integrations/faiss#:~:text=Similarity%20Search%20with%20score%E2%80%8B&text=The%20returned%20distance%20score%20is,a%20lower%20score%20is%20better.&text=It%20is%20also%20possible%20to,parameter%20instead%20of%20a%20string.
-        search = st.session_state.vectorstore.similarity_search_with_score(user_question)
-        # Write out the top two most relevant snippets
-        st.markdown(f'<span style="color:#C3142D;font-weight:bold;"> {"The ChatSQC identifies several chunks of text that are closely associated with the question and then uses them to augment ChatGPTs knowledge base with additional context prior to generating the response. Below, we provide you a sample of the two most relevant text chunks. Note that: (a) we provide this to highlight potential cases where ChatSQC is solely relying on ChatGPT in making the response, and (b) help the user identify scenarios where there does not seem to be a relevant chunk of text."}</span>', unsafe_allow_html=True)
-        st.write(search[0][0].page_content)
-        st.write('The L2 distance associated with the query and the text above is ', search[0][1], ', where a lower value indicates a better similarity to the reference text.')
-        st.write("----------------------------------------------------")
-        st.write(search[1][0].page_content)
-        st.write('The L2 distance associated with the query and the text above is ', search[1][1], ', where a lower value indicates a better similarity to the reference text.')
-    
-    # also used for debugging
-    # # Print the chat history after each user input
-    # st.write("Chat history:")
-    # for message in st.session_state.chat_history:
-    #     st.write(message.content)
 
     
     # Determine the number of question-response pairs
@@ -118,12 +132,17 @@ def handle_userinput(user_question):
         question = st.session_state.chat_history[2*i]
         response = st.session_state.chat_history[2*i + 1]
     
-        # Print the question and response
+        # Print the question
         st.write(user_template.replace("{{MSG}}", question.content), unsafe_allow_html=True)
         st.write('\n')
-        st.write(bot_template.replace("{{MSG}}", response.content), unsafe_allow_html=True)
-    
-
+        
+        
+        # Get the most relevant sources for that question
+        search = st.session_state.vectorstore.similarity_search_with_score(question.content)
+        sources_html = generate_html_links(search, response.content)
+        
+        st.write(bot_template.replace("{{MSG}}", f"{response.content}<br/><br/>{sources_html}"), unsafe_allow_html=True)
+        
 
 
 # layout to fix the footer (adapted from https://discuss.streamlit.io/t/st-footer/6447)
@@ -180,8 +199,13 @@ def main():
     with open(os.path.join(EMBEDDINGS_DIRECTORY, 'vectorstore_html.pkl'), 'rb') as f:
         vectorstore = pickle.load(f)
     
-    # Store vectorstore in session state
+    # Load the headers_dictionary
+    with open('./ehandbook/headers_dict.pkl', 'rb') as f:
+        headers_dict = pickle.load(f)
+                
+    # Store vectorstore and headers disctionary in session state
     st.session_state.vectorstore = vectorstore
+    st.session_state.headers = headers_dict
     
     # Initialize chat_history in session state if it doesn't already exist
     if 'chat_history' not in st.session_state:
@@ -211,9 +235,9 @@ def main():
                 + :link: [Douglas C. Montgomery](https://search.asu.edu/profile/10123)
                 + :link: [Allison Jones-Farmer](https://miamioh.edu/fsb/directory/?up=/directory/farmerl2)
                     
-            - **Version:** 0.2.0
+            - **Version:** 1.0.0
                 
-            - **Last Updated:** July 24, 2023
+            - **Last Updated:** August 3, 2023
             
             - **Notes:**
                 + This application is built with [Streamlit](https://streamlit.io/) and uses [langchain](https://python.langchain.com/) with OpenAI to provide basic industrial statistics and SQC answers based on the seminal [NIST/SEMATECH Engineering Statistics Handbook](https://www.itl.nist.gov/div898/handbook/index.htm).

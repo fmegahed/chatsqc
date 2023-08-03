@@ -20,3 +20,7 @@ vstore/db_index/
 
 # folder containing our blinded app
 blinded_app/
+
+# folder containing some code used for testing
+trials/
+
