@@ -3,7 +3,7 @@
 # Example adapts https://docs.streamlit.io/knowledge-base/tutorials/build-conversational-apps#build-a-chatgpt-like-app by changing
 # only the model (line 21), temperature (lines 24-25), and temperature in line 51 to match our ChatSQC app
 
-
+import os
 import openai
 import streamlit as st
 from dotenv import load_dotenv
@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 # to load the API key for Open AI
 load_dotenv()
-
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 st.title("A Quick ChatGPT-3.5 Benchmark Implementation")
 
