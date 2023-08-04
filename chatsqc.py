@@ -101,7 +101,13 @@ def generate_html_links(search, response_content):
             # Sort the chunks by score and enumerate them
             for j, (score, text_chunk) in enumerate(sorted(chunks), start=1):
                 score_rounded = round(float(score), 3)  # round the score to 3 decimal places
-                html_sources += f'<li style="font-size:0.9em;"><details><summary>Click for relevant text chunk {j} from the link above (L2-dist = {score_rounded})</summary><p>{text_chunk}</p></details></li>'
+                
+                # nicely format and print the text chunks upon call
+                text_chunk_paragraphs = text_chunk.split('\n\n')  # Split the text chunk into separate paragraphs
+                formatted_paragraphs = [f'<p style="font-size: 0.80em;">{paragraph}</p>' for paragraph in text_chunk_paragraphs]  # Format each paragraph with the desired style
+                formatted_text_chunk = ' '.join(formatted_paragraphs)  # Join the formatted paragraphs back together
+                html_sources += f'<li><details style="font-size: 0.9em;"><summary>Click for relevant text chunk {j} from the link above (L2-dist = {score_rounded})</summary><p>{formatted_text_chunk}</p></details></li>'
+            
             html_sources += '</ul>'
         html_sources += '</div>'
     else:
