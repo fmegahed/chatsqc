@@ -139,7 +139,7 @@ def handle_userinput(user_question):
         
         
         # Get the most relevant sources for that question
-        search = st.session_state.vectorstore.similarity_search_with_score(question.content)
+        search = st.session_state.vectorstore.similarity_search_with_score(question.content, k=5)
         sources_html = generate_html_links(search, response.content)
         
         st.write(bot_template.replace("{{MSG}}", f"{response.content}<br/><br/>{sources_html}"), unsafe_allow_html=True)
