@@ -94,10 +94,10 @@ def generate_html_links(search, response_content):
 
         # Generate the HTML for the sources and the text chunks
         html_sources = '<div style="padding: 1px;">'
-        html_sources += '<i><u>Verified book sources and their relevant text passages:</u></i><br/>'
+        html_sources += '<i><u>Sources and their relevant text passages:</u></i><br/>'
         for i, (source, chunks) in enumerate(results.items(), start=1):
             headers = st.session_state.headers[source]
-            html_sources += f'(Source {i}) <a style="font-size:1em;" href="{source}">{headers}</a><ul style="margin-left: 20px;">'
+            html_sources += f'(Source {i}) <a style="font-size:1em;" href="{source}">{headers}</a><ul style="margin-left: 10px; list-style-type:none;">'
             # Sort the chunks by score and enumerate them
             for j, (score, text_chunk) in enumerate(sorted(chunks), start=1):
                 score_rounded = round(float(score), 3)  # round the score to 3 decimal places
@@ -244,7 +244,7 @@ def main():
                     
             - **Version:** 1.0.0
                 
-            - **Last Updated:** August 3, 2023
+            - **Last Updated:** August 8, 2023
             
             - **Notes:**
                 + This application is built with [Streamlit](https://streamlit.io/) and uses [langchain](https://python.langchain.com/) with OpenAI to provide basic industrial statistics and SQC answers based on the seminal [NIST/SEMATECH Engineering Statistics Handbook](https://www.itl.nist.gov/div898/handbook/index.htm).

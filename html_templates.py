@@ -10,7 +10,7 @@ css = '''
 }
 
 .chat-message.bot {
-    border-style: solid; border-color: #C3142D;
+    border-style: solid; border-color: #dedcdc;
     background-color: #FFFFFF;
     margin-bottom: 3rem;
 }
