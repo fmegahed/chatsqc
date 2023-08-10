@@ -2,6 +2,7 @@ import os
 import pickle
 import streamlit as st
 from dotenv import load_dotenv
+from datetime import datetime
 
 # to have a custom prompt with langchain
 # Ref: https://github.com/hwchase17/langchain/discussions/4199#discussioncomment-5840037
@@ -31,8 +32,42 @@ import requests
 from bs4 import BeautifulSoup
 
 
+# to estimate the costs
+import tiktoken
+
+
 # Directory to store embeddings
 EMBEDDINGS_DIRECTORY = './vstore'
+
+
+# estimate cost of the query and answer
+prompt = """
+You are a Q&A bot, an intelligent system that answers user questions ONLY based on the information provided by the user. 
+When you use the information provided by the user, please include '\n (Source: NIST/SEMATECH e-Handbook of Statistical Methods)' 
+at the end of your response with a line break. If the information cannot be found in the user information, please say 'As a SQC chatbot 
+grounded only in NIST/SEMATECH's Engineering Statistics Handbook, I do not know the answer to this question as it is not in my referenced/grounding material. 
+I am sorry for not being able to help.' No answers should be made based on your in-house knowledge. For example, you may know what a large language model is, 
+but that information does not come from the knowledge base that we provided to you. So defining a large language model based on your knowledge is unacceptable. 
+Obviously, other algorithms, descriptions, and formulas that are not in the knowledge base we provided are also unacceptable. The context is:\n{context}.
+"""
+def estimate_cost(model_name, input_text, output_text):
+    enc = tiktoken.get_encoding("cl100k_base")
+    
+    # Calculate tokens for input and output
+    total_input_tokens = len(enc.encode(input_text + prompt))
+    output_tokens = len(enc.encode(output_text))
+
+    # Define costs per model
+    costs = {
+        "gpt-4": {"input": 0.03/1000, "output": 0.06/1000},
+        "gpt-3.5-turbo-16k": {"input": 0.0015/1000, "output": 0.002/1000}
+    }
+
+    # Estimate the cost
+    cost = (total_input_tokens * costs[model_name]["input"]) + (output_tokens * costs[model_name]["output"])
+
+    return cost
+
 
 
 # langchain relevant background:
@@ -49,8 +84,7 @@ def get_conversation_chain(vectorstore):
     )
     
     llm = ChatOpenAI(
-        temperature=0.25,
-        model="gpt-3.5-turbo-16k" 
+        temperature=0.25, model=st.session_state.model_choice
     )
 
     memory = ConversationBufferMemory(
@@ -119,17 +153,28 @@ def generate_html_links(search, response_content):
 
 
 
-
-
-
 # a function to handle the user input
 def handle_userinput(user_question):
     response = st.session_state.conversation({'question': user_question})
-    
+
     # Append new messages to chat history
     st.session_state.chat_history.extend(response['chat_history'])
-
     
+    # things to be added to session state
+    model_used = st.session_state.model_choice
+    cost = estimate_cost(st.session_state.model_choice, user_question, response['answer'])
+    cumulative_cost = sum(item['cost'] for item in st.session_state.queries_data) + cost
+
+    query_data = {
+        "index": len(st.session_state.queries_data) + 1,
+        "model": model_used,
+        "cost": cost,
+        "cumulative_cost": cumulative_cost
+    }
+    
+    st.session_state.queries_data.append(query_data)
+
+
     # Determine the number of question-response pairs
     num_pairs = len(st.session_state.chat_history) // 2
     
@@ -143,13 +188,26 @@ def handle_userinput(user_question):
         st.write(user_template.replace("{{MSG}}", question.content), unsafe_allow_html=True)
         st.write('\n')
         
-        
         # Get the most relevant sources for that question
         search = st.session_state.vectorstore.similarity_search_with_score(question.content, k=5)
         sources_html = generate_html_links(search, response.content)
         
-        st.write(bot_template.replace("{{MSG}}", f"{response.content}<br/><br/>{sources_html}"), unsafe_allow_html=True)
-        
+        # Get model, date, and cost info
+        last_query = st.session_state.queries_data[i]
+        model_date_info = ("<span style='font-size: 0.9em;'>This response was generated on " + 
+            datetime.now().strftime('%B %d, %Y') + 
+            " using " + last_query['model'] + 
+            ". Based on OpenAI's tiktoken library, the estimated cost of this query and answer is " + 
+            f"{last_query['cost']:.4f}" + 
+            " dollars. The users do not incur these costs, and they are provided solely to provide researchers and practitioners with insights into the expected costs of utilizing the OpenAI APIs to ground ChatGPT to high-quality SQC references.<br/>So far, in this session, you have asked " + 
+            str(last_query['index']) + 
+            (" question" if last_query['index'] == 1 else " questions") + 
+            ", and the cumulative cost of the questions and generated responses within this session is " + 
+            f"{last_query['cumulative_cost']:.4f}" + 
+            " dollars.</span>")
+
+        st.write(bot_template.replace("{{MSG}}", f"{response.content}<br/><br/>{sources_html}<i><u>Generation date and estimated costs:</u></i><br/>{model_date_info}"), unsafe_allow_html=True)
+                
 
 
 # layout to fix the footer (adapted from https://discuss.streamlit.io/t/st-footer/6447)
@@ -201,6 +259,9 @@ def main():
     load_dotenv()
     st.set_page_config(page_title="ChatSQC", page_icon=":computer:")
     st.write(css, unsafe_allow_html=True)
+    
+    # overwrite the footer
+    footer()
 
     # Load the preprocessed vectorstore from a local file
     with open(os.path.join(EMBEDDINGS_DIRECTORY, 'vectorstore_html.pkl'), 'rb') as f:
@@ -210,50 +271,91 @@ def main():
     with open('./ehandbook/headers_dict.pkl', 'rb') as f:
         headers_dict = pickle.load(f)
                 
-    # Store vectorstore and headers disctionary in session state
+    # Variables stored in session state
     st.session_state.vectorstore = vectorstore
     st.session_state.headers = headers_dict
     
-    # Initialize chat_history in session state if it doesn't already exist
+    if 'model_choice' not in st.session_state:
+        st.session_state.model_choice = "gpt-3.5-turbo-16k"  # Default model
+        
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
-        
+
+    if "queries_data" not in st.session_state:
+        st.session_state.queries_data = []
+
     # saving the conversation in session state
     st.session_state.conversation = get_conversation_chain(vectorstore)
 
+   
+    # --------------------------------------------------------------------------
+    # side bar
+    with st.sidebar:
+        st.subheader("About ChatSQC!!")
+        
+        # Custom css for font size of drop down menu
+        st.markdown("""
+            <style>
+                div[data-baseweb="select"] > div {
+                    font-size: 0.85em;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # Create a dropdown in the sidebar to let users select a model
+        model_mapping = {
+            "gpt-3.5-turbo-16k (Model for general queries)": "gpt-3.5-turbo-16k",
+            "gpt-4 (State-of-the-art OpenAI model)": "gpt-4",
+        }
+        
+        selected_display_name = st.selectbox(
+            "Choose the LLM Model:",
+            options=list(model_mapping.keys()),
+            index=0 if st.session_state.model_choice == "gpt-3.5-turbo-16k" else 1
+        )
+    
+        # Update the session state with the user's choice
+        actual_model_name = model_mapping[selected_display_name]
+        st.session_state.model_choice = actual_model_name
+        
+        
+        st.markdown("""
+            - **Created by:**
+                + :link: [Fadel M. Megahed](https://miamioh.edu/fsb/directory/?up=/directory/megahefm)  
+                + :link: [Ying-Ju (Tessa) Chen](https://udayton.edu/directory/artssciences/mathematics/chen-ying-ju.php)  
+                + :link: [Inez Zwetsloot](https://www.uva.nl/en/profile/z/w/i.m.zwetsloot/i.m.zwetsloot.html)  
+                + :link: [Sven Knoth](https://www.hsu-hh.de/compstat/en/sven-knoth-2)  
+                + :link: [Douglas C. Montgomery](https://search.asu.edu/profile/10123)  
+                + :link: [Allison Jones-Farmer](https://miamioh.edu/fsb/directory/?up=/directory/farmerl2)
+        """)
+        
+        st.write("")
+        
+        st.markdown("""
+            - **Version:** 1.1.0 (Aug 10, 2023)
+        
+            - **Notes:**
+                + This application is built with [Streamlit](https://streamlit.io/) and uses [langchain](https://python.langchain.com/) with OpenAI to provide basic industrial statistics and SQC answers based on the seminal [NIST/SEMATECH Engineering Statistics Handbook](https://www.itl.nist.gov/div898/handbook/index.htm).
+                + To construct ChatSQC, we adapted the excellent [MultiPDF Chat App by @alejandro-ao](https://github.com/alejandro-ao/ask-multiple-pdfs) such that the preprocessing of our reference (HTML) documents are done offline to save time and dollars.
+        """)
+
+       
+    
+    # --------------------------------------------------------------------------
+    
+    # the right-side of the app
+    
     st.header("Q&A the NIST/SEMATECH Handbook :books:")
     st.markdown('**ChatSQC: GPT responses, grounded in industrial statistics and quality control theory.**')
     st.text('\n')
     
     user_question = st.text_input("Ask me a SQC question:", help = "Please input your SQC-related question in the prompt area and press Enter to receive a response. Note that I am specifically designed to answer SQC-related inquiries. For transparency, at the expandable white box below your prompt, I will provide references to relevant sections from the source book that inform my responses.")
 
-
     if user_question:
         handle_userinput(user_question)
 
-    with st.sidebar:
-        st.subheader("About ChatSQC!!")
-        st.markdown("""
-            - **Created by:** 
-                + :link: [Fadel M. Megahed](https://miamioh.edu/fsb/directory/?up=/directory/megahefm)
-                + :link: [Ying-Ju (Tessa) Chen](https://udayton.edu/directory/artssciences/mathematics/chen-ying-ju.php)
-                + :link: [Inez Zwetsloot](https://www.uva.nl/en/profile/z/w/i.m.zwetsloot/i.m.zwetsloot.html)
-                + :link: [Sven Knoth](https://www.hsu-hh.de/compstat/en/sven-knoth-2)
-                + :link: [Douglas C. Montgomery](https://search.asu.edu/profile/10123)
-                + :link: [Allison Jones-Farmer](https://miamioh.edu/fsb/directory/?up=/directory/farmerl2)
-                    
-            - **Version:** 1.0.0
-                
-            - **Last Updated:** August 8, 2023
-            
-            - **Notes:**
-                + This application is built with [Streamlit](https://streamlit.io/) and uses [langchain](https://python.langchain.com/) with OpenAI to provide basic industrial statistics and SQC answers based on the seminal [NIST/SEMATECH Engineering Statistics Handbook](https://www.itl.nist.gov/div898/handbook/index.htm).
-                + To construct ChatSQC, we adapted the excellent [MultiPDF Chat App by @alejandro-ao](https://github.com/alejandro-ao/ask-multiple-pdfs) such that the preprocessing of our reference (HTML) documents are done offline to save time and dollars.
-        """)
+    # --------------------------------------------------------------------------
 
-    footer()
-
-    
 if __name__ == '__main__':
     main()
 
