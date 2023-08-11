@@ -110,7 +110,7 @@ def generate_html_links(search, response_content):
     results = {}
 
     # If the response content does not include the specified text, process the search data
-    if "As a SQC chatbot grounded only in NIST/SEMATECH's Engineering Statistics Handbook, I do not know the answer to this question as it is not in my referenced/grounding material. I am sorry for not being able to help." not in response_content:
+    if "As a SQC chatbot grounded only in NIST/SEMATECH's Engineering Statistics Handbook" not in response_content:
         # Iterate through each tuple in the list
 
         for i, item in enumerate(search):
