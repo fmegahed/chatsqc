@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 
 # langchain imports
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
 
 
 # Path for the pdf, pkl (HTML pages) and vstore:
@@ -97,8 +97,7 @@ def main():
     vectorstore = get_vectorstore(text_chunks)
     
     # Store the vectorstore in a local file with a suffix that reflects the type of file
-    with open(os.path.join(EMBEDDINGS_DIRECTORY, f'vectorstore_html.pkl'), 'wb') as f:
-        pickle.dump(vectorstore, f)
+    vectorstore.save_local(os.path.join(EMBEDDINGS_DIRECTORY, f'vectorstore_nist'))
     
     print("Done")
 

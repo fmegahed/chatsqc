@@ -2,7 +2,7 @@
 __pycache__/
 
 # pdfs folder contain an example of how we can make a chatSPC based on a copyrighted PDF (we are currently working with the copyright holder on getting clearance)
-pdfs/
+montgomery6thedition.pdf
 
 # R stuff since I use the RStudio GUI for running all my open-source code
 .Rproj.user/
