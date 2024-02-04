@@ -3,6 +3,7 @@ import pickle
 import streamlit as st
 from dotenv import load_dotenv
 from datetime import datetime
+import re
 
 # to have a custom prompt with langchain
 # Ref: https://github.com/hwchase17/langchain/discussions/4199#discussioncomment-5840037
@@ -106,13 +107,15 @@ def get_conversation_chain(vectorstore):
 
 
 # to extract the actual url from the APA citation
+# not working
 def extract_info_from_apa(apa_citation):
-    # Extracting URL
-    url_start = apa_citation.find('Available at: ') + len('Available at: ')
-    url_end = len(apa_citation) -1
-    url = apa_citation[url_start:url_end]
-
-    return url
+    # print(apa_citation) # was used for debugging
+    match = re.search(r'Available at: (http[s]?://[^.]+\.[^.]+[^ ]*)\. License', apa_citation)
+    if match:
+        url = match.group(1)  # Extracts the URL without the ". License" part
+        return url
+    else:
+        return None  # Returns None if the pattern is not found
 
 
 
@@ -127,11 +130,8 @@ def generate_html_links(search, response_content):
         for i, item in enumerate(search):
             # Extract the source
             source = item[0].metadata['source']
-            
             page_number = item[0].metadata['page']
-            
             score = item[1]
-            
             text_chunk = item[0].page_content  # Extract the text chunk
 
             # If the source is already in our results, append the new text chunk and score
@@ -158,6 +158,7 @@ def generate_html_links(search, response_content):
                 formatted_text_chunk = ' '.join(formatted_paragraphs)  # Join the formatted paragraphs back together
                 html_sources += f'<li><details style="font-size: 0.9em;"><summary>Click for relevant text chunk {j} from page {page_number} of the above paper\'s PDF (L2-dist = {score_rounded})</summary><p>{formatted_text_chunk}</p></details></li>'
             
+            html_sources += '</ul>'            
             html_sources += '</ul>'
         html_sources += '</div>'
     else:
@@ -166,6 +167,7 @@ def generate_html_links(search, response_content):
 
     # Return the HTML for the sources
     return html_sources
+
 
 
 
@@ -349,10 +351,9 @@ def main():
         st.write("")
         
         st.markdown("""
-            - **Version:** 1.2.0 (Jan 22, 2024)
+            - **Version:** 1.3.0 (Feb 03, 2024)
         
-            - **Notes:**
-                + This application is built with [Streamlit](https://streamlit.io/) and uses [langchain](https://python.langchain.com/) with OpenAI to provide basic industrial statistics and SQC answers based on all JQT and QE open-access papers (available on Taylor & Francis's Websites by Jan 22, 2024).
+            - This app is built with [Streamlit](https://streamlit.io/) and uses the OpenAI API to provide SQC answers based on [the entire collection of CC-BY and CC-BY-NC open-access journal articles from: (a) Technometrics, (b) Quality Engineering, and (c) QREI](https://raw.githubusercontent.com/fmegahed/chatsqc/main/open_source_refs.csv).
                 """)
 
        
@@ -361,7 +362,7 @@ def main():
     
     # the right-side of the app
     
-    st.header("Q&A Open-Access Papers from JQT, Technometrics, and QE")
+    st.header("Q&A Open-Access Papers from Technometrics, QE, and QREI")
     st.markdown('**ChatSQC-Research: GPT responses, grounded in open-access SQC research papers.**')
     st.text('\n')
     

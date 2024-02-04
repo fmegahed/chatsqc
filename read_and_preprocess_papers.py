@@ -7,6 +7,12 @@ import os
 import requests
 import urllib.parse
 import pickle
+import csv
+import re
+import pandas as pd
+
+from dotenv import load_dotenv
+
 
 # Define the base directory
 base_dir = 'papers\\pdfs\\'
@@ -25,8 +31,8 @@ for root, dirs, files in os.walk(base_dir):
             pdf_files.append(full_path)
 
 # Printing all found PDF file paths
-for pdf in pdf_files:
-    print(pdf)
+# for pdf in pdf_files:
+#     print(pdf)
 
 
 
@@ -43,6 +49,15 @@ def query_crossref(title):
     else:
         return None
 
+
+def extract_license(license_url):
+    match = re.search(r'creativecommons\.org/licenses/([^/]+)/', license_url)
+    if match:
+        license_code = match.group(1)
+        return license_code.replace('-', '').replace('4.0', '-4.0')
+    return ""
+
+
 def format_apa_citation(metadata):
     if 'message' in metadata and 'items' in metadata['message']:
         
@@ -55,34 +70,79 @@ def format_apa_citation(metadata):
         year = item.get('published-print', {}).get('date-parts', [[None]])[0][0]
         journal = item.get('container-title', [''])[0]
         url = item.get('URL', '')
+        license_url = item.get('license', [{}])[0].get('URL', '')  # Get the license URL
         
         apa_citation = f"{author_str} ({year}). {title}. {journal}." + (f" Available at: {url}." if url else "")
+        
+        # Append license information if available
+        if license_url:
+            apa_citation += f" License: {license_url}."
         
         return apa_citation
     return "Citation not found"
 
 
-# Dictionary to hold the APA citations
-apa_citations = {}
+# -------------------------------------------------------------
+
+# Querying Crossref for metadata and saving APA citations:
+# --------------------------------------------------------
+
+# Dictionaries to hold the APA citations
+apa_citations = {} # used for pickle file
+citation_info = [] # used for csv file
 
 for file_path in pdf_files:
     title = extract_title(file_path)
     metadata = query_crossref(title)
+    # step for the pickle file
     if metadata:
         apa_citation = format_apa_citation(metadata)
         apa_citations[file_path] = apa_citation
+    # step for the csv file 
+    # (could have combined them but got lasy and did not want to change the code above)
+    if metadata and 'message' in metadata and 'items' in metadata['message']:
+        item = metadata['message']['items'][0]  # Assuming the first item is the correct one
+        
+        authors = item.get('author', [])
+        author_str = ', '.join([f"{author['given']} {author['family']}" for author in authors])
+        
+        year = item.get('published-print', {}).get('date-parts', [[None]])[0][0]
+        title = item.get('title', [''])[0]
+        journal = item.get('container-title', [''])[0]
+        url = item.get('URL', '')
+        license_url = item.get('license', [{}])[0].get('URL', '')
+        license = extract_license(license_url)
+        citation_dict = {
+            'file_path': file_path,
+            'authors': author_str,
+            'year': year,
+            'title': title,
+            'journal': journal,
+            'url': url,
+            'license_url': license_url,
+            'license': license
+        }
+        citation_info.append(citation_dict)
 
-# Saving the dictionary of citations
+# Saving the dictionary of citations to a pickle file
 apa_citations_file = os.path.join('./', 'apa_citations.pkl')
 with open(apa_citations_file, 'wb') as f:
   pickle.dump(apa_citations, f)
 
+# Saving the dictionary of citation info to a csv file
+csv_filename = 'open_source_refs.csv'
+citation_info_df = pd.DataFrame(citation_info)
+citation_info_df.to_csv(csv_filename, index=False, encoding='UTF-8')
+
+print(f"CSV file '{csv_filename}' has been created.")
 
 
 
+# -------------------------------------------------------------
 
 # Reading and Loading all PDFs:
 # -----------------------------
+load_dotenv()
 
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter

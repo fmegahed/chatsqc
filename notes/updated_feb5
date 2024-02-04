@@ -1,0 +1,28 @@
+Work Done (2024-01-31 -- 2024-02-04):
+-------------------------------------
+
+[1] Wrote a script 'get_qrei.py', which filtered the papers that have CC BY and CC BY-NC
+from the CSV provided by Wiley. Then I generated the URLs for the papers and saved them in a CSV file
+titled "pdf_urls.csv".
+
+[2] Manually downloaded the 37 PDFs from the URLs in the CSV file (Wiely blocked the automated download)
+
+[3] Edited the read_and_preprocess_papers.py to make the following changes:
+  - Added a new function to extract the License from CrossRef.
+  - Edited the format apa_citation to include the license.
+  - Automatically created a CSV of all our citations with the license to host on GitHub 
+  [easier to manipulate than pickle file; we still use the pickle file for the app]  
+
+[4] Updated the 3 files for the app: 
+  - chatsqc.py: added a link to our entire collection of papers (the beauty of the CSV above) in the landing page.  
+  - 02_ChatSQC-Research.py: 
+    - updated the header. 
+    - updated the note to highlight the papers that we are now using.  
+    - edited the HTML linking function so it now works (given that the APA citation now includes the License so we cannot extract the URL just by specifying the end as I used to)
+    - added a link to the CSV in the "About" page.  
+    
+
+Bug Discovered:
+--------------
+[1] The show text formatting is weird; I traced it down to the Langchain load_and_chunk function
+in the read_and_preprocess_papers.py. Not sure what is the fix yet.

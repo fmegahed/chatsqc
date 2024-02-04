@@ -9,7 +9,7 @@ def main():
     Welcome to ChatSQC, a versatile chat application offering two distinct modes of interaction:
     
     - **ChatSQCB**: A base version of the ChatSQC application, grounded in the NIST/SEMATECH Handbook of Engineering Statistics.
-    - **ChatSQCR**: A research-grade version of the ChatSQC application, grounded in the entire collection (as made available online by Taylor & Francis) of open-access journal articles from: (a) the Journal of Quality Technology, (b) Technometrics, and (c) Quality Engineering.
+    - **ChatSQCR**: A research-grade version of the ChatSQC application, grounded in [the entire collection of CC-BY and CC-BY-NC open-access journal articles from: (a) Technometrics, (b) Quality Engineering, and (c) QREI](https://raw.githubusercontent.com/fmegahed/chatsqc/main/open_source_refs.csv).
 
     Explore **each mode by selecting them from the sidebar**!
     """)
@@ -48,7 +48,7 @@ def main():
         st.write("")
         
         st.markdown("""
-            - **Version:** 1.2.0 (Jan 22, 2024)
+            - **Version:** 1.3.0 (Feb 03, 2024)
         """)
 
        
