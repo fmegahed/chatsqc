@@ -251,7 +251,7 @@ print(cleaned_data[len(cleaned_data)-1].page_content)
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 
-# OpenAI's state of the art embedding model (surprisingly also their cheapest)
+# OpenAI's state of the art embedding model
 embeddings_model = OpenAIEmbeddings(model = 'text-embedding-ada-002', chunk_size = 1000)
 
 # get embeddings for the data and create the vectorstore

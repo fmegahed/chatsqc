@@ -1,4 +1,6 @@
-
+"""
+This is a script to create a vectorstore for the NIST eHandbook of Engineering Statistics.
+"""
 
 
 
@@ -66,7 +68,7 @@ def get_text_chunks(source_text_list):
 
 
 def get_vectorstore(source_chunk_list):
-    # OpenAI's state of the art embedding model (surprisingly also their cheapest)
+    # OpenAI's state of the art embedding model
     embeddings_model = OpenAIEmbeddings(model = 'text-embedding-ada-002', chunk_size = 1000)
 
     # separate the texts from their sources

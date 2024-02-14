@@ -55,7 +55,7 @@ but that information does not come from the knowledge base that we provided to y
 Obviously, other algorithms, descriptions, and formulas that are not in the knowledge base we provided are also unacceptable. The context is:\n{context}.
 """
 def estimate_cost(model_name, input_text, output_text):
-    enc = tiktoken.get_encoding("cl100k_base")
+    enc = tiktoken.encoding_for_model("text-embedding-ada-002")
     
     # Calculate tokens for input and output
     total_input_tokens = len(enc.encode(input_text + prompt))
@@ -63,8 +63,8 @@ def estimate_cost(model_name, input_text, output_text):
 
     # Define costs per model
     costs = {
-        "gpt-4-1106-preview": {"input": 0.01/1000, "output": 0.03/1000},
-        "gpt-3.5-turbo-16k": {"input": 0.0015/1000, "output": 0.002/1000}
+        "gpt-4-turbo-preview": {"input": 0.01/1000, "output": 0.03/1000},
+        "gpt-3.5-turbo-0125": {"input": 0.0005/1000, "output": 0.0015/1000}
     }
 
     # Estimate the cost
@@ -280,7 +280,7 @@ def main():
     st.session_state.headers = headers_dict
     
     if 'model_choice' not in st.session_state:
-        st.session_state.model_choice = "gpt-3.5-turbo-16k"  # Default model
+        st.session_state.model_choice = "gpt-3.5-turbo-0125"  # Default model
         
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
@@ -308,14 +308,14 @@ def main():
         
         # Create a dropdown in the sidebar to let users select a model
         model_mapping = {
-            "gpt-3.5-turbo-16k (Model for general queries)": "gpt-3.5-turbo-16k",
-            "gpt-4 (State-of-the-art OpenAI model)": "gpt-4-1106-preview",
+            "gpt-3.5-turbo-0125 (Model for general queries)": "gpt-3.5-turbo-0125",
+            "gpt-4 (State-of-the-art OpenAI model)": "gpt-4-turbo-preview",
         }
         
         selected_display_name = st.selectbox(
             "Choose the LLM Model:",
             options=list(model_mapping.keys()),
-            index=0 if st.session_state.model_choice == "gpt-3.5-turbo-16k" else 1
+            index=0 if st.session_state.model_choice == "gpt-3.5-turbo-0125" else 1
         )
     
         # Update the session state with the user's choice
