@@ -1,8 +1,28 @@
+"""
+This is a script to read and preprocess the papers in the 'papers/pdfs' directory. 
+It served several purposes:
+  - Create a citation dictionary for all our papers saved as a pickle file
+  (we use this dictionary to provide in-text citations for the generated answers).  
+  - Create a CSV file with the citation information for all our papers
+  (we put this on GitHub so readers can easily see the papers used in our ChatSQC-Research)
+  - Removing the Cover Pages of all Technometrics and QE papers.
+  - Creating a vectorstore for all our papers, which we read using the `DirectoryLoader` 
+  and `PyMuPDFLoader` classes from the `langchain` package. The vectorstore is then saved
+  as a local file in the 'vstore' directory.
+  
+Things to Consider in the Future:
+  - We could also consider removing the headers and footers from the papers . 
+  (this would require a more complex approach to the text extraction)
+  - We could also consider combining shorter blocks with the preceding text.
+  - We could also remove the references from the papers.
+"""
+
+
 EMBEDDINGS_DIRECTORY = './vstore' # directory to store embeddings
 
 
-# Creating a Citation Dictionary for all our papers:
-# --------------------------------------------------
+# Creating the needed functions for our citation dictionary and CSV file:
+# ----------------------------------------------------------------------
 import os
 import requests
 import urllib.parse
@@ -34,10 +54,9 @@ for root, dirs, files in os.walk(base_dir):
 # for pdf in pdf_files:
 #     print(pdf)
 
-
-
 def extract_title(path):
     return os.path.basename(path).rsplit('.', 1)[0]
+
 
 def query_crossref(title):
     query = urllib.parse.quote(title)
@@ -140,14 +159,65 @@ print(f"CSV file '{csv_filename}' has been created.")
 
 # -------------------------------------------------------------
 
+# Delete first page of QE and Technometrics papers:
+# -------------------------------------------------
+import fitz
+import os
+
+# Function to check and delete the first page if it contains specific texts
+def delete_first_page_if_conditions_met(file_path):
+    # Open the PDF file
+    doc = fitz.open(file_path)
+    
+    # Check if the document has at least one page
+    if len(doc) > 0:
+        # Extract text from the first page
+        first_page_text = doc[0].get_text()
+        
+        # Conditions to check in the first page
+        conditions = ["Submit your article to this journal", "To cite this article:"]
+        
+        # Check if both conditions are met
+        if all(condition in first_page_text for condition in conditions):
+            # Select all pages except the first one
+            pages_to_keep = list(range(1, len(doc)))
+            doc.select(pages_to_keep)
+            
+            # Overwrite the original PDF
+            doc.save(file_path,  incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
+    
+    # Close the document
+    doc.close()
+
+# Directories to search for PDFs
+directories = ['./papers/pdfs/qe/', './papers/pdfs/tech/']
+
+# Loop through each directory
+for directory in directories:
+    # Loop through each file in the directory
+    for filename in os.listdir(directory):
+        # Check if the file is a PDF
+        if filename.endswith('.pdf'):
+            # Construct the full file path
+            file_path = os.path.join(directory, filename)
+            
+            # Process the file
+            delete_first_page_if_conditions_met(file_path)
+
+print("First pages of QE and Technometrics papers have been deleted.")
+
+
+# -------------------------------------------------------------
+
 # Reading and Loading all PDFs:
 # -----------------------------
 load_dotenv()
 
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_community.document_loaders import DirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-loader = PyPDFDirectoryLoader("./papers/pdfs/")
+loader = DirectoryLoader("./papers/pdfs/", loader_cls = PyMuPDFLoader)
 
 our_text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
@@ -157,9 +227,24 @@ our_text_splitter = RecursiveCharacterTextSplitter(
 
 data = loader.load_and_split(text_splitter=our_text_splitter)
 
-print(data)
+def clean_data(documents):
+    download_pattern = r"Downloaded from https:\/\/onlinelibrary\.wiley\.com\/doi\/[\w.\/]+ by Miami \[.*?\].*?OA articles are governed by the applicable Creative Commons License"
+    line_break_pattern = r"-\n"
+    
+    for doc in documents:
+        # Clean the page_content attribute directly
+        cleaned_content = re.sub(download_pattern, "", doc.page_content, flags=re.DOTALL)
+        cleaned_content = re.sub(line_break_pattern, "\n", cleaned_content)
+        doc.page_content = cleaned_content
+    return documents
+
+cleaned_data = clean_data(data)
+
+# Showing the cleaned page_content of the last document in the list as an example
+print(cleaned_data[len(cleaned_data)-1].page_content)
 
 
+# -------------------------------------------------------------
 
 # Creating the Vectorstore:
 # -------------------------
@@ -170,6 +255,6 @@ from langchain_community.vectorstores import FAISS
 embeddings_model = OpenAIEmbeddings(model = 'text-embedding-ada-002', chunk_size = 1000)
 
 # get embeddings for the data and create the vectorstore
-vectorstore = FAISS.from_documents(documents = data, embedding=embeddings_model)
+vectorstore = FAISS.from_documents(documents = cleaned_data, embedding=embeddings_model)
 
 vectorstore.save_local(os.path.join(EMBEDDINGS_DIRECTORY, f'vectorstore_papers'))
