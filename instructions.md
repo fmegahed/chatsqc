@@ -3,14 +3,13 @@
 1. Download and Install Anaconda (if needed) [Only Once]  
 2. Open Anaconda     
 3. Create a virtual environment using this Run this at the command line:  [Only once]  
-	- conda create -n chatsqc python=3.9   
+	- conda create -n chatsqc python=3.10   
 		+ It will ask you to click, y; please type: y and click Enter  
 	- conda activate chatsqc   
 	- Use the command window to cd (change drive) to the location of your requirements.txt file  
 	- pip install -r requirement.txt   
 4. Run the app using:
-	- python preprocess.py (to create the vector store in your local environment)
-	- streamlit run chatsqc.py (to run the app)
+	- streamlit run ChatSQC.py (to run the app)
 
 
 
@@ -21,4 +20,4 @@
 	- Alternatively, you can type: conda activate chatsqc  
 3. Make sure that your terminal points out to the drive and folder where you save our Python files.   
 4. Run the app using:
-   - streamlit run chatsqc.py
+   - streamlit run ChatSQC.py
