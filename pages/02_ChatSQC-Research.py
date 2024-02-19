@@ -107,15 +107,17 @@ def get_conversation_chain(vectorstore):
 
 
 # to extract the actual url from the APA citation
-# not working
+
 def extract_info_from_apa(apa_citation):
-    # print(apa_citation) # was used for debugging
-    match = re.search(r'Available at: (http[s]?://[^.]+\.[^.]+[^ ]*)\. License', apa_citation)
+    # Enhanced regex to capture both DOI and License URLs
+    pattern = re.compile(r'Available at: (http[s]?://[^.]+\.[^.]+[^ ]*)\. \nLicense: (http[s]?://[^.]+\.[^.]+[^ ]*)')
+    match = pattern.search(apa_citation)
     if match:
-        url = match.group(1)  # Extracts the URL without the ". License" part
-        return url
+        paper_url = match.group(1)  # Extracts the DOI URL
+        license_url = match.group(2)  # Extracts the License URL
+        return paper_url, license_url
     else:
-        return None  # Returns None if the pattern is not found
+        return None, None  # Returns None for both if the pattern is not found
 
 
 
@@ -146,8 +148,18 @@ def generate_html_links(search, response_content):
         html_sources += '<i><u>Sources and their relevant text passages:</u></i><br/>'
         for i, (source, chunks) in enumerate(results.items(), start=1):
             apa_citation = st.session_state.headers[source]
-            paper_link = extract_info_from_apa(apa_citation)
-            html_sources += f'(Source {i}) <a style="font-size:1em;" href="{paper_link}">{apa_citation}</a><ul style="margin-left: 10px; list-style-type:none;">'
+            #paper_link = extract_info_from_apa(apa_citation)
+            #html_sources += f'(Source {i}) <a style="font-size:1em;" href="{paper_link}">{apa_citation}</a><ul style="margin-left: 10px; list-style-type:none;">'
+            paper_url, license_url = extract_info_from_apa(apa_citation)
+
+            # Embed only the URLs
+            apa_citation_modified = apa_citation.replace(paper_url, f'<a href="{paper_url}">{paper_url}</a>')
+            if license_url:
+                apa_citation_modified = apa_citation_modified.replace(license_url, f'<a href="{license_url}">{license_url}</a>')
+
+            # Constructing the html_sources string
+            html_sources += f'(Source {i}) <span style="font-size:1em;">{apa_citation_modified}</span><ul style="margin-left: 10px; list-style-type:none;">'
+
             # Sort the chunks by score and enumerate them
             for j, (score, page_number, text_chunk) in enumerate(sorted(chunks), start=1):
                 score_rounded = round(float(score), 3)  # round the score to 3 decimal places
@@ -167,6 +179,9 @@ def generate_html_links(search, response_content):
 
     # Return the HTML for the sources
     return html_sources
+
+
+
 
 
 

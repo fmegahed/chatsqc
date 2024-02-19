@@ -91,11 +91,12 @@ def format_apa_citation(metadata):
         url = item.get('URL', '')
         license_url = item.get('license', [{}])[0].get('URL', '')  # Get the license URL
         
-        apa_citation = f"{author_str} ({year}). {title}. {journal}." + (f" Available at: {url}." if url else "")
+        apa_citation = f"{author_str} ({year}). {title}. {journal}." + (f" \nAvailable at: {url}." if url else "")
+
         
         # Append license information if available
         if license_url:
-            apa_citation += f" License: {license_url}."
+            apa_citation += f" \nLicense: {license_url}."
         
         return apa_citation
     return "Citation not found"
