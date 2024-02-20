@@ -368,7 +368,7 @@ def main():
         st.markdown("""
             - **Version:** 1.3.0 (Feb 03, 2024)
         
-            - This app is built with [Streamlit](https://streamlit.io/) and uses the OpenAI API to provide SQC answers based on [the entire collection of CC-BY and CC-BY-NC open-access journal articles from: (a) Technometrics, (b) Quality Engineering, and (c) QREI](https://raw.githubusercontent.com/fmegahed/chatsqc/main/open_source_refs.csv).
+            - This app is built with [Streamlit](https://streamlit.io/) and uses the OpenAI API to provide SQC answers based on [the entire collection of CC-BY and CC-BY-NC open-access journal articles from: (a) Technometrics, (b) Quality Engineering, and (c) QREI](https://github.com/fmegahed/chatsqc/blob/main/open_source_refs.csv).
                 """)
 
        
