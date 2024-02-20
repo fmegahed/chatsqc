@@ -51,7 +51,7 @@ You are a Q&A bot, an intelligent system that answers user questions ONLY based 
 """
 
 def estimate_cost(model_name, input_text, output_text):
-    enc = tiktoken.encoding_for_model("text-embedding-ada-002")
+    enc = tiktoken.encoding_for_model("text-embedding-3-large")
     
     # Calculate tokens for input and output
     total_input_tokens = len(enc.encode(input_text + prompt))
@@ -298,7 +298,7 @@ def main():
     footer()
 
     # Load the preprocessed vectorstore from a local file
-    embeddings_model = OpenAIEmbeddings(model = 'text-embedding-ada-002', chunk_size = 1000)
+    embeddings_model = OpenAIEmbeddings(model = 'text-embedding-3-large', chunk_size = 1000)
     vectorstore = FAISS.load_local('vstore/vectorstore_papers', embeddings = embeddings_model)
     
     # Load the headers_dictionary
@@ -310,7 +310,7 @@ def main():
     st.session_state.headers = headers_dict
     
     if 'model_choice' not in st.session_state:
-        st.session_state.model_choice = "gpt-3.5-turbo-0125"  # Default model
+        st.session_state.model_choice = "gpt-4-turbo-preview"  # Default model
         
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
@@ -325,7 +325,7 @@ def main():
     # --------------------------------------------------------------------------
     # side bar
     with st.sidebar:
-        st.subheader("About ChatSQCR!!")
+        st.subheader("About ChatSQC-Research!!")
         
         # Custom css for font size of drop down menu
         st.markdown("""
@@ -338,14 +338,14 @@ def main():
         
         # Create a dropdown in the sidebar to let users select a model
         model_mapping = {
-            "gpt-3.5-turbo-0125 (Model for general queries)": "gpt-3.5-turbo-0125",
             "gpt-4 (State-of-the-art OpenAI model)": "gpt-4-turbo-preview",
+            "gpt-3.5-turbo-0125 (Model for general queries)": "gpt-3.5-turbo-0125",
         }
         
         selected_display_name = st.selectbox(
             "Choose the LLM Model:",
             options=list(model_mapping.keys()),
-            index=0 if st.session_state.model_choice == "gpt-3.5-turbo-0125" else 1
+            index=0 if st.session_state.model_choice == "gpt-4-turbo-preview" else 1
         )
     
         # Update the session state with the user's choice

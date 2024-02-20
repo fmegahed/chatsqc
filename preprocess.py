@@ -69,7 +69,7 @@ def get_text_chunks(source_text_list):
 
 def get_vectorstore(source_chunk_list):
     # OpenAI's state of the art embedding model
-    embeddings_model = OpenAIEmbeddings(model = 'text-embedding-ada-002', chunk_size = 1000)
+    embeddings_model = OpenAIEmbeddings(model = 'text-embedding-3-large', chunk_size = 1000)
 
     # separate the texts from their sources
     texts = [chunk for source, chunk in source_chunk_list]
